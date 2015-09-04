@@ -156,7 +156,15 @@ function renderVDOM(node: VDOM, parent: HTMLElement) {
   appendChild(parent, elem);
 
   for (let key of Object.keys(node.props)) {
-    elem[key] = node.props[key];
+    let val = node.props[key];
+    if (_.isDerivable(val)) {
+      ((key, val) => {
+        let r = val.reaction(v => elem[key] = v);
+        lifecycle(elem, () => r.start().force(), () => r.stop());
+      })(key, val);
+    } else {
+      elem[key] = val;
+    }
   }
 
   for (let child of node.children) {

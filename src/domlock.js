@@ -128,7 +128,16 @@ function renderVDOM(node, parent) {
     appendChild(parent, elem);
     for (var _i = 0, _a = Object.keys(node.props); _i < _a.length; _i++) {
         var key = _a[_i];
-        elem[key] = node.props[key];
+        var val = node.props[key];
+        if (_.isDerivable(val)) {
+            (function (key, val) {
+                var r = val.reaction(function (v) { return elem[key] = v; });
+                lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+            })(key, val);
+        }
+        else {
+            elem[key] = val;
+        }
     }
     for (var _b = 0, _c = node.children; _b < _c.length; _b++) {
         var child = _c[_b];

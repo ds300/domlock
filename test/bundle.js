@@ -6254,7 +6254,16 @@ function renderVDOM(node, parent) {
     appendChild(parent, elem);
     for (var _i = 0, _a = Object.keys(node.props); _i < _a.length; _i++) {
         var key = _a[_i];
-        elem[key] = node.props[key];
+        var val = node.props[key];
+        if (_.isDerivable(val)) {
+            (function (key, val) {
+                var r = val.reaction(function (v) { return elem[key] = v; });
+                lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+            })(key, val);
+        }
+        else {
+            elem[key] = val;
+        }
     }
     for (var _b = 0, _c = node.children; _b < _c.length; _b++) {
         var child = _c[_b];
@@ -6476,7 +6485,8 @@ function renderThing(thing) {
     return React.createElement("div", {"onclick": function () { return age.swap(inc); }}, "person: ", name, "(", age, ")");
 }
 var jism = _.atom(null);
-var x = React.createElement("div", {"className": 'jism', "$node": jism}, "Bananas on fire: ", timeElem, React.createElement("br", null), React.createElement("button", {"onclick": function () { return alphabet.swap(wrap); }}, "shamona!"), React.createElement("br", null), alphabet, caching_1.cmap(renderThing, things));
+var klass = _.atom("jism");
+var x = React.createElement("div", {"className": klass, "$node": jism}, "Bananas on fire: ", timeElem, React.createElement("br", null), React.createElement("button", {"onclick": function () { alphabet.swap(wrap); klass.set(klass.get() + " banana"); }}, "shamona!"), React.createElement("br", null), alphabet, caching_1.cmap(renderThing, things));
 window.addEventListener('load', function () { return domlock_1.render(x, document.body); });
 
 },{"../src/caching":3,"../src/domlock":5,"havelock":1,"immutable":2}]},{},[6]);

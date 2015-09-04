@@ -19,5 +19,6 @@ function renderThing(thing) {
     return React.createElement("div", {"onclick": function () { return age.swap(inc); }}, "person: ", name, "(", age, ")");
 }
 var jism = _.atom(null);
-var x = React.createElement("div", {"className": 'jism', "$node": jism}, "Bananas on fire: ", timeElem, React.createElement("br", null), React.createElement("button", {"onclick": function () { return alphabet.swap(wrap); }}, "shamona!"), React.createElement("br", null), alphabet, caching_1.cmap(renderThing, things));
+var klass = _.atom("jism");
+var x = React.createElement("div", {"className": klass, "$node": jism}, "Bananas on fire: ", timeElem, React.createElement("br", null), React.createElement("button", {"onclick": function () { alphabet.swap(wrap); klass.set(klass.get() + " banana"); }}, "shamona!"), React.createElement("br", null), alphabet, caching_1.cmap(renderThing, things));
 window.addEventListener('load', function () { return domlock_1.render(x, document.body); });
