@@ -1,0 +1,20 @@
+{
+  "name": "domlock",
+  "version": "0.0.1",
+  "description": "havelock dom library",
+  "main": "src/domlock.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "havelock": "^0.4.0",
+    "immutable": "^3.7.4"
+  },
+  "devDependencies": {
+    "browserify": "^11.0.1",
+    "grunt": "^0.4.5",
+    "grunt-contrib-watch": "^0.6.1"
+  }
+}
