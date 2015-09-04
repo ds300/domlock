@@ -29,11 +29,10 @@ function renderThing (thing: _.Atom<any>) {
   return <div onclick={() => age.swap(inc)}>person: {name} ({age})</div>;
 }
 
-const node = _.atom(null);
 const klass = _.atom("banana");
 const moarBanana = x => x + " banana";
 
-const x = <div className={klass} $node={node}>
+const x = <div className={klass}>
               Bananas on fire: {timeElem} <br />
               <button onclick={() => {alphabet.swap(wrap); klass.swap(moarBanana)}}>
                 more banana!

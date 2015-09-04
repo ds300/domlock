@@ -6043,7 +6043,6 @@ function ucmap(uf, f, xs) {
         var newCache = immutable_1.Map().asMutable();
         var result = [];
         ids.forEach(function (id) {
-            // allow duplicates
             var value = newCache.get(id, NOT_FOUND);
             if (value === NOT_FOUND) {
                 value = cache.get(id, NOT_FOUND);
@@ -6094,9 +6093,6 @@ exports.destruct = destruct;
 /*****************************************/
 /*** LIST DIFFING + PATCHING ALGORITHM ***/
 /*****************************************/
-/**
- * Returns a list of sections over the current configuration
- */
 function findSections(current, desired) {
     if (current.length === 0) {
         return [];
@@ -6124,9 +6120,6 @@ function findSections(current, desired) {
     result.push(currentSection);
     return result;
 }
-/**
- * finds the 'best' section subsequence
- */
 function bestIncreasingSectionSequence(sections) {
     var best = { sequence: [], weight: 0 };
     function descend(sequence, idx, last_desired_start) {
@@ -6149,9 +6142,6 @@ function bestIncreasingSectionSequence(sections) {
     descend([], 0, -1);
     return best.sequence;
 }
-/**
- * calls f with sliding instructions based on the given sections and anchor subsequence
- */
 function executeTranslations(sections, bestSubseqence, f) {
     var anchors = bestSubseqence.map(function (i) { return sections[i]; });
     sections.forEach(function (section) {
@@ -6168,9 +6158,6 @@ function executeTranslations(sections, bestSubseqence, f) {
         }
     });
 }
-/**
- * executes f with sliding instructions in order to make current look like desired
- */
 function applyDiff(current, desired, f) {
     var sections = findSections(current, desired);
     var best = bestIncreasingSectionSequence(sections);
@@ -6200,9 +6187,6 @@ var VDOM = (function () {
     return VDOM;
 })();
 exports.VDOM = VDOM;
-/**
- * Creates a VDOM node from the given spec. jsx pluggable
- */
 function dom(tagName, props) {
     var children = [];
     for (var _i = 2; _i < arguments.length; _i++) {
@@ -6214,9 +6198,6 @@ function dom(tagName, props) {
     return new VDOM(tagName, props || {}, children);
 }
 exports.dom = dom;
-/**
- * Renders a renderable thing, apending it to parent
- */
 function render(thing, parent) {
     if (thing instanceof VDOM) {
         renderVDOM(thing, parent);
@@ -6230,11 +6211,6 @@ function render(thing, parent) {
 }
 exports.render = render;
 var TMP_NODE = document.createElement('div');
-/**
- * coerces a thing to a DOM Node. doesn't work for derivables or lists/arrays,
- * otherwise calls .toString on the thing. Leaves things that are already Nodes
- * alone.
- */
 function toNode(thing) {
     if (thing instanceof Array || thing instanceof immutable_1.List || _.isDerivable(thing)) {
         throw new Error("can't coerce arrays, lists, or derivables to nodes");
@@ -6265,9 +6241,6 @@ function ensureChildState(child) {
         child[IN_DOM] = child[PARENT].derive(function (p) { return p && p[IN_DOM].get(); });
     }
 }
-/**
- * Like Node#appendChild but with domlock bookkeeping
- */
 function appendChild(parent, child) {
     ensureParentState(parent);
     ensureChildState(child);
@@ -6275,9 +6248,6 @@ function appendChild(parent, child) {
     parent.appendChild(child);
 }
 exports.appendChild = appendChild;
-/**
- * Like Node#replaceChild but with domlock bookkeeping
- */
 function replaceChild(parent, newChild, oldChild) {
     ensureParentState(parent);
     ensureChildState(newChild);
@@ -6286,9 +6256,6 @@ function replaceChild(parent, newChild, oldChild) {
     parent.replaceChild(newChild, oldChild);
 }
 exports.replaceChild = replaceChild;
-/**
- * Like Node#insertBefore but with domlock bookkeeping
- */
 function insertBefore(parent, newChild, referenceChild) {
     ensureParentState(parent);
     ensureChildState(newChild);
@@ -6296,18 +6263,11 @@ function insertBefore(parent, newChild, referenceChild) {
     parent.insertBefore(newChild, referenceChild);
 }
 exports.insertBefore = insertBefore;
-/**
- * Like Node#remove but with domlock bookkeeping
- */
 function remove(child) {
     child[PARENT] && child[PARENT].set(null);
     child.remove();
 }
 exports.remove = remove;
-/**
- * adds lifecycle callbacks to child. invokes onMount if child is already in
- * the dom
- */
 function lifecycle(child, onMount, onUnmount) {
     ensureChildState(child);
     var r = child[IN_DOM].reaction(function (inDom) {
@@ -6323,11 +6283,6 @@ function lifecycle(child, onMount, onUnmount) {
     }
 }
 exports.lifecycle = lifecycle;
-/**
- * partially applies f to args for the sake of mixins
- * e.g. let myLifecycle = asMixin(lifecycle, onMount, onUnmount);
- * myLifecycle(someElem); // sets up the lifecycle on someElem
- */
 function asMixin(f) {
     var args = [];
     for (var _i = 1; _i < arguments.length; _i++) {
@@ -6421,12 +6376,10 @@ var ListHandler = (function () {
     };
     ListHandler.prototype.handle = function (parent, value) {
         var _this = this;
-        // build new state, transferring nodes from previous state if possible
         var newNodes = immutable_1.OrderedSet().asMutable();
         var newValue2Nodes = immutable_1.Map().asMutable();
         var sharedDesiredOrder = immutable_1.OrderedSet().asMutable();
         walk(value, function (thing) {
-            // look for previous nodes which were rendered for this thing
             var nodes = _this.value2Nodes.get(thing);
             var node = null;
             if (nodes && nodes.length > 0) {
@@ -6434,8 +6387,6 @@ var ListHandler = (function () {
                 sharedDesiredOrder.add(node);
             }
             else {
-                // no previous nodes, render this thing
-                // todo: doesn't work for derivables. figure out if possible
                 node = toNode(thing);
             }
             newNodes.add(node);
@@ -6446,7 +6397,6 @@ var ListHandler = (function () {
             }
             newNodesForThing.push(node);
         });
-        // so we don't lose our place
         var placeholder = document.createTextNode("");
         parent.insertBefore(placeholder, this.nodes.last().nextSibling);
         var sharedPreviousOrder = immutable_1.OrderedSet().asMutable();
@@ -6455,8 +6405,6 @@ var ListHandler = (function () {
                 sharedPreviousOrder.add(n);
             }
             else {
-                // this node is not shared with our new set of nodes, so we can remove
-                // it from the dom
                 remove(n);
             }
         });
@@ -6467,7 +6415,6 @@ var ListHandler = (function () {
             var tmNode = previous[toMoveIdx];
             insertBefore(parent, tmNode, ibNode);
         });
-        // ok patch applied, now add the rest of the nodes in there
         var i = 0;
         newNodes.forEach(function (n) {
             if (i == desired.length) {
@@ -6517,7 +6464,6 @@ var NodeHandler = (function (_super) {
     return NodeHandler;
 })(TextHandler);
 function renderDerivable(thing, parent) {
-    /// placeholder
     var placeholder = document.createTextNode('');
     parent.appendChild(placeholder);
     var handler = new TextHandler();
@@ -6580,10 +6526,9 @@ function renderThing(thing) {
     var _a = caching_1.destruct(thing, 'name', 'age'), name = _a.name, age = _a.age;
     return React.createElement("div", {"onclick": function () { return age.swap(inc); }}, "person: ", name, " (", age, ")");
 }
-var node = _.atom(null);
 var klass = _.atom("banana");
 var moarBanana = function (x) { return x + " banana"; };
-var x = React.createElement("div", {"className": klass, "$node": node}, "Bananas on fire: ", timeElem, " ", React.createElement("br", null), React.createElement("button", {"onclick": function () { alphabet.swap(wrap); klass.swap(moarBanana); }}, "more banana!"), React.createElement("br", null), alphabet, caching_1.cmap(renderThing, things));
+var x = React.createElement("div", {"className": klass}, "Bananas on fire: ", timeElem, " ", React.createElement("br", null), React.createElement("button", {"onclick": function () { alphabet.swap(wrap); klass.swap(moarBanana); }}, "more banana!"), React.createElement("br", null), alphabet, caching_1.cmap(renderThing, things));
 window.addEventListener('load', function () { return domlock_1.render(x, document.body); });
 
 },{"../src/caching":3,"../src/domlock":5,"havelock":1,"immutable":2}]},{},[6]);
