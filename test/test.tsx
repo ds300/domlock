@@ -26,16 +26,17 @@ const inc = x => x + 1
 function renderThing (thing: _.Atom<any>) {
   let {name, age} = destruct(thing, 'name', 'age');
 
-  return <div onclick={() => age.swap(inc)}>person: {name}
-  ({age})</div>;
+  return <div onclick={() => age.swap(inc)}>person: {name} ({age})</div>;
 }
 
-const jism = _.atom(null);
-const klass = _.atom("jism");
-const x = <div className={klass} $node={jism}>
+const node = _.atom(null);
+const klass = _.atom("banana");
+const moarBanana = x => x + " banana";
+
+const x = <div className={klass} $node={node}>
               Bananas on fire: {timeElem} <br />
-              <button onclick={() => {alphabet.swap(wrap); klass.set(klass.get() + " banana")}}>
-                shamona!
+              <button onclick={() => {alphabet.swap(wrap); klass.swap(moarBanana)}}>
+                more banana!
               </button>
               <br />
               {alphabet}

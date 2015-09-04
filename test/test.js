@@ -16,9 +16,10 @@ var wrap = function (xs) { return xs.slice(1).push(xs.first()); };
 var inc = function (x) { return x + 1; };
 function renderThing(thing) {
     var _a = caching_1.destruct(thing, 'name', 'age'), name = _a.name, age = _a.age;
-    return React.createElement("div", {"onclick": function () { return age.swap(inc); }}, "person: ", name, "(", age, ")");
+    return React.createElement("div", {"onclick": function () { return age.swap(inc); }}, "person: ", name, " (", age, ")");
 }
-var jism = _.atom(null);
-var klass = _.atom("jism");
-var x = React.createElement("div", {"className": klass, "$node": jism}, "Bananas on fire: ", timeElem, React.createElement("br", null), React.createElement("button", {"onclick": function () { alphabet.swap(wrap); klass.set(klass.get() + " banana"); }}, "shamona!"), React.createElement("br", null), alphabet, caching_1.cmap(renderThing, things));
+var node = _.atom(null);
+var klass = _.atom("banana");
+var moarBanana = function (x) { return x + " banana"; };
+var x = React.createElement("div", {"className": klass, "$node": node}, "Bananas on fire: ", timeElem, " ", React.createElement("br", null), React.createElement("button", {"onclick": function () { alphabet.swap(wrap); klass.swap(moarBanana); }}, "more banana!"), React.createElement("br", null), alphabet, caching_1.cmap(renderThing, things));
 window.addEventListener('load', function () { return domlock_1.render(x, document.body); });
