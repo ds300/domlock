@@ -145,6 +145,7 @@ function renderTodo(todo, idx) {
 const todosElem = (
     <section $class="main" $hide={numTodos.is(0)}>
       <input $class="toggle-all"
+             id="toggle-all"
              type="checkbox"
              checked={allCompleted}
              onchange={ () => todos.swap(markAll, !allCompleted.get()) } />
@@ -199,6 +200,3 @@ const pageElem = (
 );
 
 window.addEventListener('load', () => render(pageElem, document.getElementById('main')));
-
-
-<div>word <code>code</code> word</div>
