@@ -6077,6 +6077,7 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var _ = require('havelock');
 var immutable_1 = require('immutable');
+var util_1 = require('./util');
 var VDOM = (function () {
     function VDOM(tagName, props, children) {
         this.tagName = tagName;
@@ -6172,14 +6173,27 @@ function remove(child) {
 exports.remove = remove;
 function lifecycle(child, onMount, onUnmount) {
     ensureChildState(child);
-    var r = child[IN_DOM].reaction(function (inDom) {
-        if (inDom) {
-            onMount && onMount();
-        }
-        else {
-            onUnmount && onUnmount();
-        }
-    }).start();
+    var r;
+    if (_.isReaction(onMount)) {
+        r = child[IN_DOM].reaction(function (inDom) {
+            if (inDom) {
+                onMount.start().force();
+            }
+            else {
+                onMount.stop();
+            }
+        }).start();
+    }
+    else {
+        r = child[IN_DOM].reaction(function (inDom) {
+            if (inDom) {
+                onMount && onMount();
+            }
+            else {
+                onUnmount && onUnmount();
+            }
+        }).start();
+    }
     if (child[IN_DOM].get()) {
         r.force();
     }
@@ -6201,8 +6215,7 @@ function renderVDOM(node, parent) {
         var val = node.props[key];
         if (_.isDerivable(val)) {
             (function (key, val) {
-                var r = val.reaction(function (v) { return elem[key] = v; });
-                lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+                lifecycle(elem, val.reaction(function (v) { return elem[key] = v; }));
             })(key, val);
         }
         else {
@@ -6219,7 +6232,7 @@ function renderVDOM(node, parent) {
     if (node.props.$mixins) {
         node.props.$mixins.forEach(function (m) { return m(elem); });
     }
-    if (Object.hasOwnProperty.call(node.props, '$hide')) {
+    if ('$hide' in node.props) {
         if (_.isDerivable(node.props.$hide)) {
             node.props.$show = node.props.$hide.not();
         }
@@ -6227,17 +6240,16 @@ function renderVDOM(node, parent) {
             node.props.$show = !node.props.$hide;
         }
     }
-    if (Object.hasOwnProperty.call(node.props, '$show')) {
+    if ('$show' in node.props) {
         if (_.isDerivable(node.props.$show)) {
-            var r = node.props.$show.reaction(function (show) {
+            lifecycle(elem, node.props.$show.reaction(function (show) {
                 if (show) {
                     elem.style.display = "";
                 }
                 else {
                     elem.style.display = "none";
                 }
-            });
-            lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+            }));
         }
         else if (!node.props.$show) {
             elem.style.display = "none";
@@ -6250,11 +6262,18 @@ function renderVDOM(node, parent) {
             var val = styles[style];
             if (_.isDerivable(val)) {
                 (function (style, val) {
-                    var r = val.reaction(function (v) { return elem.style[style] = v; });
-                    lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+                    lifecycle(elem, val.reaction(function (v) { return elem.style[style] = v; }));
                 })(style, val);
             }
         }
+    }
+    if (node.props.$class) {
+        if (!_.isDerivable(node.props.$class)) {
+            node.props.$class = _.struct([node.props.$class]);
+        }
+        lifecycle(elem, node.props.$class.derive(util_1.renderClass).reaction(function (className) {
+            elem.className = className;
+        }));
     }
 }
 function renderString(str, parent) {
@@ -6298,7 +6317,7 @@ var TextHandler = (function () {
     return TextHandler;
 })();
 var BLAH = {};
-var util_1 = require('./util');
+var util_2 = require('./util');
 var ListHandler = (function () {
     function ListHandler() {
     }
@@ -6349,7 +6368,7 @@ var ListHandler = (function () {
         });
         var previous = sharedPreviousOrder.toArray();
         var desired = sharedDesiredOrder.toArray();
-        var lcs = util_1.longestCommonSubsequence(previous, desired);
+        var lcs = util_2.longestCommonSubsequence(previous, desired);
         var i = 0;
         newNodes.forEach(function (n) {
             if (i === lcs.length) {

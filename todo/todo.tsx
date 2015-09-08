@@ -107,8 +107,6 @@ function onEnter (fn) {
 }
 
 
-//
-// render todo list item
 function renderTodo(todo, idx) {
   const { description, completed, editing } = destruct(todo, 'description', 'completed', 'editing');
   const show = showing.switch(
@@ -116,9 +114,6 @@ function renderTodo(todo, idx) {
     "completed", completed,
     true
   );
-
-
-  const klass = _.struct({editing, completed}).derive(renderClass);
 
   const inputNode = atom(null);
   const startEditing = () => {
@@ -132,13 +127,13 @@ function renderTodo(todo, idx) {
   });
 
   return (
-    <li className={klass} $show={show}>
-      <div className="view">
-        <input className="toggle" type="checkbox" checked={completed} onchange={ () => todos.swap(toggleComplete, idx.get()) } />
+    <li $class={{editing, completed}} $show={show}>
+      <div $class="view">
+        <input $class="toggle" type="checkbox" checked={completed} onchange={ () => todos.swap(toggleComplete, idx.get()) } />
         <label ondblclick={ startEditing }>{description}</label>
-        <button className="destroy" onclick={ ev => todos.swap(deleteTodo, idx.get()) }></button>
+        <button $class="destroy" onclick={ ev => todos.swap(deleteTodo, idx.get()) }></button>
       </div>
-      <input className="edit"
+      <input $class="edit"
              $node={inputNode}
              onblur={stopEditing}
              onkeypress={onEnter(ev => ev.target.blur())}
@@ -147,25 +142,23 @@ function renderTodo(todo, idx) {
   );
 }
 
-// list itself as derivable
 const todosElem = (
-    <section className="main" $hide={numTodos.is(0)}>
-      <input className="toggle-all"
+    <section $class="main" $hide={numTodos.is(0)}>
+      <input $class="toggle-all"
              type="checkbox"
              checked={allCompleted}
              onchange={ () => todos.swap(markAll, !allCompleted.get()) } />
       <label htmlFor="toggle-all">Mark all as {allCompleted.then('in', '')}complete</label>
-      <ul className="todo-list">
+      <ul $class="todo-list">
         { ucmap(x => x.get('id'), renderTodo, todos) }
       </ul>
     </section>
 );
 
-// footer as derivable
 const footerElem = (
-    <footer className="footer">
-      <span className="todo-count"><strong>{numRemaining}</strong> items left</span>
-      <ul className="filters">
+    <footer $class="footer">
+      <span $class="todo-count"><strong>{numRemaining}</strong> items left</span>
+      <ul $class="filters">
         <li>
           <a $class={{selected: showing.is('all')}}  href="#/">
             All
@@ -182,17 +175,17 @@ const footerElem = (
           </a>
         </li>
       </ul>
-      <button className="clear-completed"
+      <button $class="clear-completed"
               $hide={allIncomplete}
               onclick={() => todos.swap(clearCompleted)}>Clear completed</button>
     </footer>
 );
 
 const pageElem = (
-  <section className="todoapp">
-    <header className="header">
+  <section $class="todoapp">
+    <header $class="header">
       <h1>todos</h1>
-      <input className="new-todo"
+      <input $class="new-todo"
              placeholder="What needs to be done?"
              onkeypress={onEnter(ev => {
                todos.swap(newTodo, ev.target.value);

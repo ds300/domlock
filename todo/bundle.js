@@ -6077,6 +6077,7 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var _ = require('havelock');
 var immutable_1 = require('immutable');
+var util_1 = require('./util');
 var VDOM = (function () {
     function VDOM(tagName, props, children) {
         this.tagName = tagName;
@@ -6172,14 +6173,27 @@ function remove(child) {
 exports.remove = remove;
 function lifecycle(child, onMount, onUnmount) {
     ensureChildState(child);
-    var r = child[IN_DOM].reaction(function (inDom) {
-        if (inDom) {
-            onMount && onMount();
-        }
-        else {
-            onUnmount && onUnmount();
-        }
-    }).start();
+    var r;
+    if (_.isReaction(onMount)) {
+        r = child[IN_DOM].reaction(function (inDom) {
+            if (inDom) {
+                onMount.start().force();
+            }
+            else {
+                onMount.stop();
+            }
+        }).start();
+    }
+    else {
+        r = child[IN_DOM].reaction(function (inDom) {
+            if (inDom) {
+                onMount && onMount();
+            }
+            else {
+                onUnmount && onUnmount();
+            }
+        }).start();
+    }
     if (child[IN_DOM].get()) {
         r.force();
     }
@@ -6201,8 +6215,7 @@ function renderVDOM(node, parent) {
         var val = node.props[key];
         if (_.isDerivable(val)) {
             (function (key, val) {
-                var r = val.reaction(function (v) { return elem[key] = v; });
-                lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+                lifecycle(elem, val.reaction(function (v) { return elem[key] = v; }));
             })(key, val);
         }
         else {
@@ -6219,7 +6232,7 @@ function renderVDOM(node, parent) {
     if (node.props.$mixins) {
         node.props.$mixins.forEach(function (m) { return m(elem); });
     }
-    if (Object.hasOwnProperty.call(node.props, '$hide')) {
+    if ('$hide' in node.props) {
         if (_.isDerivable(node.props.$hide)) {
             node.props.$show = node.props.$hide.not();
         }
@@ -6227,17 +6240,16 @@ function renderVDOM(node, parent) {
             node.props.$show = !node.props.$hide;
         }
     }
-    if (Object.hasOwnProperty.call(node.props, '$show')) {
+    if ('$show' in node.props) {
         if (_.isDerivable(node.props.$show)) {
-            var r = node.props.$show.reaction(function (show) {
+            lifecycle(elem, node.props.$show.reaction(function (show) {
                 if (show) {
                     elem.style.display = "";
                 }
                 else {
                     elem.style.display = "none";
                 }
-            });
-            lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+            }));
         }
         else if (!node.props.$show) {
             elem.style.display = "none";
@@ -6250,11 +6262,18 @@ function renderVDOM(node, parent) {
             var val = styles[style];
             if (_.isDerivable(val)) {
                 (function (style, val) {
-                    var r = val.reaction(function (v) { return elem.style[style] = v; });
-                    lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+                    lifecycle(elem, val.reaction(function (v) { return elem.style[style] = v; }));
                 })(style, val);
             }
         }
+    }
+    if (node.props.$class) {
+        if (!_.isDerivable(node.props.$class)) {
+            node.props.$class = _.struct([node.props.$class]);
+        }
+        lifecycle(elem, node.props.$class.derive(util_1.renderClass).reaction(function (className) {
+            elem.className = className;
+        }));
     }
 }
 function renderString(str, parent) {
@@ -6298,7 +6317,7 @@ var TextHandler = (function () {
     return TextHandler;
 })();
 var BLAH = {};
-var util_1 = require('./util');
+var util_2 = require('./util');
 var ListHandler = (function () {
     function ListHandler() {
     }
@@ -6349,7 +6368,7 @@ var ListHandler = (function () {
         });
         var previous = sharedPreviousOrder.toArray();
         var desired = sharedDesiredOrder.toArray();
-        var lcs = util_1.longestCommonSubsequence(previous, desired);
+        var lcs = util_2.longestCommonSubsequence(previous, desired);
         var i = 0;
         newNodes.forEach(function (n) {
             if (i === lcs.length) {
@@ -6606,7 +6625,6 @@ function onEnter(fn) {
 function renderTodo(todo, idx) {
     var _a = util_1.destruct(todo, 'description', 'completed', 'editing'), description = _a.description, completed = _a.completed, editing = _a.editing;
     var show = showing.switch("active", completed.not(), "completed", completed, true);
-    var klass = _.struct({ editing: editing, completed: completed }).derive(util_1.renderClass);
     var inputNode = havelock_1.atom(null);
     var startEditing = function () {
         todos.swap(editingTodo, idx.get(), true);
@@ -6617,11 +6635,11 @@ function renderTodo(todo, idx) {
         todos.swap(editingTodo, idx.get(), false);
         todos.swap(editTodo, idx.get(), ev.target.value);
     });
-    return (React.createElement("li", {"className": klass, "$show": show}, React.createElement("div", {"className": "view"}, React.createElement("input", {"className": "toggle", "type": "checkbox", "checked": completed, "onchange": function () { return todos.swap(toggleComplete, idx.get()); }}), React.createElement("label", {"ondblclick": startEditing}, description), React.createElement("button", {"className": "destroy", "onclick": function (ev) { return todos.swap(deleteTodo, idx.get()); }})), React.createElement("input", {"className": "edit", "$node": inputNode, "onblur": stopEditing, "onkeypress": onEnter(function (ev) { return ev.target.blur(); }), "onfocus": function (ev) { return ev.target.select(); }})));
+    return (React.createElement("li", {"$class": { editing: editing, completed: completed }, "$show": show}, React.createElement("div", {"$class": "view"}, React.createElement("input", {"$class": "toggle", "type": "checkbox", "checked": completed, "onchange": function () { return todos.swap(toggleComplete, idx.get()); }}), React.createElement("label", {"ondblclick": startEditing}, description), React.createElement("button", {"$class": "destroy", "onclick": function (ev) { return todos.swap(deleteTodo, idx.get()); }})), React.createElement("input", {"$class": "edit", "$node": inputNode, "onblur": stopEditing, "onkeypress": onEnter(function (ev) { return ev.target.blur(); }), "onfocus": function (ev) { return ev.target.select(); }})));
 }
-var todosElem = (React.createElement("section", {"className": "main", "$hide": numTodos.is(0)}, React.createElement("input", {"className": "toggle-all", "type": "checkbox", "checked": allCompleted, "onchange": function () { return todos.swap(markAll, !allCompleted.get()); }}), React.createElement("label", {"htmlFor": "toggle-all"}, "Mark all as ", allCompleted.then('in', ''), "complete"), React.createElement("ul", {"className": "todo-list"}, caching_1.ucmap(function (x) { return x.get('id'); }, renderTodo, todos))));
-var footerElem = (React.createElement("footer", {"className": "footer"}, React.createElement("span", {"className": "todo-count"}, React.createElement("strong", null, numRemaining), " items left"), React.createElement("ul", {"className": "filters"}, React.createElement("li", null, React.createElement("a", {"$class": { selected: showing.is('all') }, "href": "#/"}, "All")), React.createElement("li", null, React.createElement("a", {"$class": { selected: showing.is('active') }, "href": "#/active"}, "Active")), React.createElement("li", null, React.createElement("a", {"$class": { selected: showing.is('completed') }, "href": "#/completed"}, "Completed"))), React.createElement("button", {"className": "clear-completed", "$hide": allIncomplete, "onclick": function () { return todos.swap(clearCompleted); }}, "Clear completed")));
-var pageElem = (React.createElement("section", {"className": "todoapp"}, React.createElement("header", {"className": "header"}, React.createElement("h1", null, "todos"), React.createElement("input", {"className": "new-todo", "placeholder": "What needs to be done?", "onkeypress": onEnter(function (ev) {
+var todosElem = (React.createElement("section", {"$class": "main", "$hide": numTodos.is(0)}, React.createElement("input", {"$class": "toggle-all", "type": "checkbox", "checked": allCompleted, "onchange": function () { return todos.swap(markAll, !allCompleted.get()); }}), React.createElement("label", {"htmlFor": "toggle-all"}, "Mark all as ", allCompleted.then('in', ''), "complete"), React.createElement("ul", {"$class": "todo-list"}, caching_1.ucmap(function (x) { return x.get('id'); }, renderTodo, todos))));
+var footerElem = (React.createElement("footer", {"$class": "footer"}, React.createElement("span", {"$class": "todo-count"}, React.createElement("strong", null, numRemaining), " items left"), React.createElement("ul", {"$class": "filters"}, React.createElement("li", null, React.createElement("a", {"$class": { selected: showing.is('all') }, "href": "#/"}, "All")), React.createElement("li", null, React.createElement("a", {"$class": { selected: showing.is('active') }, "href": "#/active"}, "Active")), React.createElement("li", null, React.createElement("a", {"$class": { selected: showing.is('completed') }, "href": "#/completed"}, "Completed"))), React.createElement("button", {"$class": "clear-completed", "$hide": allIncomplete, "onclick": function () { return todos.swap(clearCompleted); }}, "Clear completed")));
+var pageElem = (React.createElement("section", {"$class": "todoapp"}, React.createElement("header", {"$class": "header"}, React.createElement("h1", null, "todos"), React.createElement("input", {"$class": "new-todo", "placeholder": "What needs to be done?", "onkeypress": onEnter(function (ev) {
     todos.swap(newTodo, ev.target.value);
     ev.target.value = "";
 }), "autofocus": true})), todosElem, footerElem));

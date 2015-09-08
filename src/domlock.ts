@@ -1,9 +1,10 @@
 /// <reference path="../node_modules/havelock/dist/havelock.d.ts"/>
 /// <reference path="../node_modules/immutable/dist/immutable.d.ts"/>
 
-import { Atom, Derivable } from 'havelock'
+import { Atom, Derivable, Reaction } from 'havelock'
 import * as _ from 'havelock'
 import { List, Map, OrderedSet } from 'immutable'
+import { renderClass } from './util'
 
 export class VDOM {
   tagName: string;
@@ -126,15 +127,28 @@ export function remove(child) {
  * adds lifecycle callbacks to child. invokes onMount if child is already in
  * the dom
  */
-export function lifecycle(child: Node, onMount: () => void, onUnmount: () => void) {
+export function lifecycle(child: Node, reaction: Reaction<any>);
+export function lifecycle(child: Node, onMount: () => void, onUnmount: () => void);
+export function lifecycle(child: Node, onMount, onUnmount?) {
   ensureChildState(child);
-  let r = child[IN_DOM].reaction(inDom => {
-    if (inDom) {
-      onMount && onMount();
-    } else {
-      onUnmount && onUnmount();
-    }
-  }).start();
+  let r: Reaction<any>;
+  if (_.isReaction(onMount)) {
+    r = child[IN_DOM].reaction(inDom => {
+      if (inDom) {
+        onMount.start().force();
+      } else {
+        onMount.stop();
+      }
+    }).start();
+  } else {
+    r = child[IN_DOM].reaction(inDom => {
+      if (inDom) {
+        onMount && onMount();
+      } else {
+        onUnmount && onUnmount();
+      }
+    }).start();
+  }
 
   if (child[IN_DOM].get()) {
     r.force();
@@ -159,8 +173,7 @@ function renderVDOM(node: VDOM, parent: HTMLElement) {
     let val = node.props[key];
     if (_.isDerivable(val)) {
       ((key, val) => {
-        let r = val.reaction(v => elem[key] = v);
-        lifecycle(elem, () => r.start().force(), () => r.stop());
+        lifecycle(elem, val.reaction(v => elem[key] = v));
       })(key, val);
     } else {
       elem[key] = val;
@@ -179,7 +192,7 @@ function renderVDOM(node: VDOM, parent: HTMLElement) {
     node.props.$mixins.forEach(m => m(elem));
   }
 
-  if (Object.hasOwnProperty.call(node.props, '$hide')) {
+  if ('$hide' in node.props) {
     if (_.isDerivable(node.props.$hide)) {
       node.props.$show = node.props.$hide.not();
     } else {
@@ -187,16 +200,15 @@ function renderVDOM(node: VDOM, parent: HTMLElement) {
     }
   }
 
-  if (Object.hasOwnProperty.call(node.props, '$show')) {
+  if ('$show' in node.props) {
     if (_.isDerivable(node.props.$show)) {
-      let r = node.props.$show.reaction(show => {
+      lifecycle(elem, node.props.$show.reaction(show => {
         if (show) {
           elem.style.display = "";
         } else {
           elem.style.display = "none";
         }
-      });
-      lifecycle(elem, () => r.start().force(), () => r.stop());
+      }));
     } else if (!node.props.$show) {
       elem.style.display = "none";
     }
@@ -208,11 +220,19 @@ function renderVDOM(node: VDOM, parent: HTMLElement) {
       let val = styles[style];
       if (_.isDerivable(val)) {
         ((style, val) => {
-          let r = val.reaction(v => elem.style[style] = v);
-          lifecycle(elem, () => r.start().force(), () => r.stop());
+          lifecycle(elem, val.reaction(v => elem.style[style] = v));
         })(style, val);
       }
     }
+  }
+
+  if (node.props.$class) {
+    if (!_.isDerivable(node.props.$class)) {
+      node.props.$class = _.struct([node.props.$class]);
+    }
+    lifecycle(elem, node.props.$class.derive(renderClass).reaction(className => {
+      elem.className = className;
+    }));
   }
 }
 
