@@ -149,6 +149,43 @@ function renderVDOM(node, parent) {
     if (node.props.$mixins) {
         node.props.$mixins.forEach(function (m) { return m(elem); });
     }
+    if (Object.hasOwnProperty.call(node.props, '$hide')) {
+        if (_.isDerivable(node.props.$hide)) {
+            node.props.$show = node.props.$hide.not();
+        }
+        else {
+            node.props.$show = !node.props.$hide;
+        }
+    }
+    if (Object.hasOwnProperty.call(node.props, '$show')) {
+        if (_.isDerivable(node.props.$show)) {
+            var r = node.props.$show.reaction(function (show) {
+                if (show) {
+                    elem.style.display = "";
+                }
+                else {
+                    elem.style.display = "none";
+                }
+            });
+            lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+        }
+        else if (!node.props.$show) {
+            elem.style.display = "none";
+        }
+    }
+    if (node.props.$style) {
+        var styles = Object.keys(node.props.$style);
+        for (var _d = 0; _d < styles.length; _d++) {
+            var style = styles[_d];
+            var val = styles[style];
+            if (_.isDerivable(val)) {
+                (function (style, val) {
+                    var r = val.reaction(function (v) { return elem.style[style] = v; });
+                    lifecycle(elem, function () { return r.start().force(); }, function () { return r.stop(); });
+                })(style, val);
+            }
+        }
+    }
 }
 function renderString(str, parent) {
     parent.appendChild(document.createTextNode(str));
@@ -191,7 +228,7 @@ var TextHandler = (function () {
     return TextHandler;
 })();
 var BLAH = {};
-var diff_1 = require('./diff');
+var util_1 = require('./util');
 var ListHandler = (function () {
     function ListHandler() {
     }
@@ -201,7 +238,7 @@ var ListHandler = (function () {
     };
     ListHandler.prototype.expire = function (parent, placeholder) {
         this.nodes.slice(1).forEach(remove);
-        replaceChild(parent, placeholder, this.nodes[0]);
+        replaceChild(parent, placeholder, this.nodes.first());
     };
     ListHandler.prototype.willHandle = function (value) {
         return (value instanceof immutable_1.List && value.size > 0) || (value instanceof Array && value.length > 0);
@@ -242,21 +279,17 @@ var ListHandler = (function () {
         });
         var previous = sharedPreviousOrder.toArray();
         var desired = sharedDesiredOrder.toArray();
-        diff_1.applyDiff(previous, desired, function (insertBeforeIdx, toMoveIdx) {
-            var ibNode = insertBeforeIdx ? previous[insertBeforeIdx] : placeholder;
-            var tmNode = previous[toMoveIdx];
-            insertBefore(parent, tmNode, ibNode);
-        });
+        var lcs = util_1.longestCommonSubsequence(previous, desired);
         var i = 0;
         newNodes.forEach(function (n) {
-            if (i == desired.length) {
+            if (i === lcs.length) {
                 insertBefore(parent, n, placeholder);
             }
-            else if (desired[i] === n) {
+            else if (lcs[i] === n) {
                 i++;
             }
             else {
-                insertBefore(parent, n, desired[i]);
+                insertBefore(parent, n, lcs[i]);
             }
         });
         placeholder.remove();
@@ -319,6 +352,9 @@ function renderDerivable(thing, parent) {
                 handler = new NodeHandler();
             }
             else {
+                handler = new TextHandler();
+            }
+            if (!handler.willHandle(val)) {
                 handler = new TextHandler();
             }
             handler.init(parent, placeholder);

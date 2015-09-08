@@ -39,7 +39,8 @@ function ucmap(uf, f, xs) {
                 value = cache.get(id, NOT_FOUND);
                 if (value === NOT_FOUND) {
                     var deriv = _.isAtom(xs) ? xs.lens(lookupCursor(id2idx, id)) : xs.derive(lookup, id2idx, id);
-                    value = f(deriv);
+                    var idx = id2idx.derive(function (id2idx) { return id2idx.get(id); });
+                    value = f(deriv, idx);
                 }
                 newCache.set(id, value);
             }
@@ -56,26 +57,3 @@ function cmap(f, xs) {
     return ucmap(identity, f, xs);
 }
 exports.cmap = cmap;
-function cursor(prop) {
-    return {
-        get: function (state) {
-            return state && state.get(prop);
-        },
-        set: function (state, value) {
-            return state.set(prop, value);
-        }
-    };
-}
-exports.cursor = cursor;
-function destruct(d) {
-    var props = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        props[_i - 1] = arguments[_i];
-    }
-    var result = {};
-    props.forEach(function (prop) {
-        return result[prop] = _.isAtom(d) ? d.lens(cursor(prop)) : d.derive(function (d) { return d.get(prop); });
-    });
-    return result;
-}
-exports.destruct = destruct;

@@ -178,6 +178,42 @@ function renderVDOM(node: VDOM, parent: HTMLElement) {
   if (node.props.$mixins) {
     node.props.$mixins.forEach(m => m(elem));
   }
+
+  if (Object.hasOwnProperty.call(node.props, '$hide')) {
+    if (_.isDerivable(node.props.$hide)) {
+      node.props.$show = node.props.$hide.not();
+    } else {
+      node.props.$show = !node.props.$hide;
+    }
+  }
+
+  if (Object.hasOwnProperty.call(node.props, '$show')) {
+    if (_.isDerivable(node.props.$show)) {
+      let r = node.props.$show.reaction(show => {
+        if (show) {
+          elem.style.display = "";
+        } else {
+          elem.style.display = "none";
+        }
+      });
+      lifecycle(elem, () => r.start().force(), () => r.stop());
+    } else if (!node.props.$show) {
+      elem.style.display = "none";
+    }
+  }
+
+  if (node.props.$style) {
+    let styles = Object.keys(node.props.$style);
+    for (let style of styles) {
+      let val = styles[style];
+      if (_.isDerivable(val)) {
+        ((style, val) => {
+          let r = val.reaction(v => elem.style[style] = v);
+          lifecycle(elem, () => r.start().force(), () => r.stop());
+        })(style, val);
+      }
+    }
+  }
 }
 
 function renderString(str: string, parent: HTMLElement) {
@@ -230,7 +266,7 @@ class TextHandler implements DerivableHandler {
 
 const BLAH = {};
 
-import { applyDiff } from './diff'
+import { longestCommonSubsequence } from './util'
 
 class ListHandler implements DerivableHandler {
   // the nodes currently attached to the parent
@@ -245,7 +281,7 @@ class ListHandler implements DerivableHandler {
   }
   expire(parent, placeholder) {
     this.nodes.slice(1).forEach(remove);
-    replaceChild(parent, placeholder, <any>this.nodes[0]);
+    replaceChild(parent, placeholder, <any>this.nodes.first());
   }
   willHandle(value) {
     return (value instanceof List && value.size > 0) || (value instanceof Array && value.length > 0);
@@ -294,21 +330,17 @@ class ListHandler implements DerivableHandler {
 
     let previous: Node[] = sharedPreviousOrder.toArray();
     let desired: Node[] = sharedDesiredOrder.toArray();
-    applyDiff(previous, desired, (insertBeforeIdx, toMoveIdx) => {
-      let ibNode = insertBeforeIdx ? previous[insertBeforeIdx] : placeholder;
-      let tmNode = previous[toMoveIdx];
-      insertBefore(parent, tmNode, ibNode);
-    });
 
-    // ok patch applied, now add the rest of the nodes in there
+    let lcs: Node[] = longestCommonSubsequence(previous, desired);
+
     let i = 0;
     newNodes.forEach(n => {
-      if (i == desired.length) {
+      if (i === lcs.length) {
         insertBefore(parent, n, placeholder);
-      } else if (desired[i] === n) {
+      } else if (lcs[i] === n) {
         i++
       } else {
-        insertBefore(parent, n, desired[i]);
+        insertBefore(parent, n, lcs[i]);
       }
     });
 
@@ -364,6 +396,9 @@ function renderDerivable(thing: Derivable<any>, parent: HTMLElement) {
       } else if (val instanceof Node) {
         handler = new NodeHandler();
       } else {
+        handler = new TextHandler();
+      }
+      if (!handler.willHandle(val)) {
         handler = new TextHandler();
       }
       handler.init(parent, placeholder);

@@ -1,5 +1,6 @@
 import { render, dom } from '../src/domlock'
-import { cmap, destruct, ucmap } from '../src/caching'
+import { cmap, ucmap } from '../src/caching'
+import { destruct } from '../src/util'
 
 import * as _ from 'havelock'
 import * as imut from 'immutable'
@@ -35,7 +36,7 @@ const moarBanana = x => x + " banana";
 const x = <div className={klass}>
               Bananas on fire: {timeElem} <br />
               <button onclick={() => {alphabet.swap(wrap); klass.swap(moarBanana)}}>
-                more banana!
+                more bananas!
               </button>
               <br />
               {alphabet}

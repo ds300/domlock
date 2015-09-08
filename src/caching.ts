@@ -45,7 +45,7 @@ const NOT_FOUND = {};
 
 export function ucmap<I, O, U>(
     uf: (i: I) => U,
-    f: (i: Derivable<I>) => O,
+    f: (i: Derivable<I>, idx?: Derivable<number>) => O,
     xs: Derivable<List<I>>
   ): Derivable<List<O>> {
 
@@ -64,7 +64,8 @@ export function ucmap<I, O, U>(
         value = cache.get(id, <O>NOT_FOUND);
         if (value === NOT_FOUND) {
           var deriv = _.isAtom(xs) ? (<Atom<List<I>>>xs).lens(lookupCursor<I, U>(id2idx, id)) : xs.derive(lookup, id2idx, id);
-          value = f(deriv);
+          var idx = id2idx.derive(id2idx => id2idx.get(id));
+          value = f(deriv, idx);
         }
         newCache.set(id, value);
       }
@@ -78,29 +79,6 @@ export function ucmap<I, O, U>(
 
 const identity = x => x;
 
-export function cmap<I, O>(f: (i: Derivable<I>) => O, xs: Derivable<List<I>>): Derivable<List<O>> {
+export function cmap<I, O>(f: (i: Derivable<I>, idx?: Derivable<number>) => O, xs: Derivable<List<I>>): Derivable<List<O>> {
   return ucmap(identity, f, xs);
-}
-
-export function cursor<T>(prop: string): Lens<Map<string, T>, T>{
-  return {
-    get (state: Map<string, T>) {
-      return state && state.get(prop);
-    },
-    set (state: Map<string, T>, value: T) {
-      return state.set(prop, value);
-    }
-  }
-}
-
-export function destruct<T>(d: Atom<Map<string, T>>, ...props: string[]): {[key: string]: Atom<T>};
-export function destruct<T>(d: Derivable<Map<string, T>>, ...props: string[]): {[key: string]: Derivable<T>};
-export function destruct<T>(d, ...props) {
-  let result = {};
-
-  props.forEach(prop =>
-    result[prop] = _.isAtom(d) ? (<Atom<Map<string, T>>>d).lens(cursor<T>(prop)) : d.derive(d => d.get(prop))
-  );
-
-  return <any>result;
 }
