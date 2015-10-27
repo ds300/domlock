@@ -1,5 +1,5 @@
 var immutable_1 = require('immutable');
-var havelock_1 = require('havelock');
+var derivable_1 = require('derivable');
 function populateMatrix(a, b) {
     var matrix = [];
     for (var i = 0; i < b.length; i++) {
@@ -53,7 +53,7 @@ function destruct(d) {
     }
     var result = {};
     props.forEach(function (prop) {
-        return result[prop] = havelock_1.isAtom(d) ? d.lens(cursor(prop)) : d.derive(function (d) { return d.get(prop); });
+        return result[prop] = derivable_1.isAtom(d) ? d.lens(cursor(prop)) : d.derive(function (d) { return d.get(prop); });
     });
     return result;
 }

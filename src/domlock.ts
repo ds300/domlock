@@ -1,8 +1,8 @@
-/// <reference path="../node_modules/havelock/dist/havelock.d.ts"/>
+/// <reference path="../node_modules/derivable/dist/derivable.d.ts"/>
 /// <reference path="../node_modules/immutable/dist/immutable.d.ts"/>
 
-import { Atom, Derivable, Reaction } from 'havelock'
-import * as _ from 'havelock'
+import { Atom, Derivable, Reaction } from 'derivable'
+import * as _ from 'derivable'
 import { List, Map, OrderedSet } from 'immutable'
 import { renderClass } from './util'
 
@@ -68,8 +68,8 @@ export function toNode(thing: any): Node {
   }
 }
 
-const IN_DOM = '__havelock__elemInDom';
-const PARENT = '__havelock__elemParent';
+const IN_DOM = '__domlock__elemInDom';
+const PARENT = '__domlock__elemParent';
 
 function ensureParentState(parent: HTMLElement) {
   if (!parent[IN_DOM]) {
@@ -118,7 +118,7 @@ export function insertBefore(parent: HTMLElement, newChild: Node, referenceChild
 /**
  * Like Node#remove but with domlock bookkeeping
  */
-export function remove(child) {
+export function remove(parent, child) {
   child[PARENT] && child[PARENT].set(null);
   child.remove();
 }
@@ -217,11 +217,13 @@ function renderVDOM(node: VDOM, parent: HTMLElement) {
   if (node.props.$style) {
     let styles = Object.keys(node.props.$style);
     for (let style of styles) {
-      let val = styles[style];
+      let val = node.props.$style[style];
       if (_.isDerivable(val)) {
         ((style, val) => {
           lifecycle(elem, val.reaction(v => elem.style[style] = v));
         })(style, val);
+      } else {
+        elem.style[style] = val;
       }
     }
   }
@@ -344,7 +346,7 @@ class ListHandler implements DerivableHandler {
       } else {
         // this node is not shared with our new set of nodes, so we can remove
         // it from the dom
-        remove(n);
+        remove(parent, n);
       }
     });
 

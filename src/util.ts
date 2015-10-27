@@ -1,5 +1,5 @@
 import { List, Map, OrderedSet } from 'immutable'
-import { Atom, Derivable, isAtom, Lens } from 'havelock'
+import { Atom, Derivable, isAtom, Lens } from 'derivable'
 
 function populateMatrix(a: any[], b: any[]): number[][] {
   let matrix = [];

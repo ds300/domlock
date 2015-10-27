@@ -39,7 +39,7 @@ function newTodo(todos, description) {
     }
 }
 function clearCompleted(todos) {
-    return todos.filter(function (t) { return t.complete; }).toList();
+    return todos.filter(function (t) { return !t.get('completed'); }).toList();
 }
 function toggleComplete(todos, idx) {
     return todos.updateIn([idx, 'completed'], function (x) { return !x; });

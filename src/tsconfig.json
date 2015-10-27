@@ -20,9 +20,10 @@
         "!./node_modules/**/*"
     ],
     "files": [
-        "./caching.ts",
-        "./domlock.ts",
-        "./util.ts",
-        "./vdom.ts"
-    ]
+        "caching.ts",
+        "domlock.ts",
+        "util.ts",
+        "vdom.ts"
+    ],
+    "exclude": []
 }

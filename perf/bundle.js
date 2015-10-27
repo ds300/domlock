@@ -6007,6 +6007,57 @@ exports['default'] = exports;
 
 }));
 },{}],3:[function(require,module,exports){
+var domlock_1 = require('../src/domlock');
+var caching_1 = require('../src/caching');
+var _ = require('havelock');
+var imut = require('immutable');
+var React = { createElement: domlock_1.dom };
+var dynamics = _.atom(30);
+var incd = function (d) { return d + 1 % 100; };
+var decd = function (d) { return d - 1 % 100; };
+var width = _.atom(10);
+var height = _.atom(10);
+function rgb(x, y, w, h, d) {
+    var r = Math.abs(Math.round(Math.sin(x * 2 * Math.PI / w) * 256) + d) % 256, g = Math.abs(Math.round(Math.cos(y * 2 * Math.PI / h) * 256) - d) % 256, b = ((x * y) - d) % 256;
+    return "rgb(" + r + ", " + g + ", " + b + ")";
+}
+function pixel(coords) {
+    var x, y;
+    x = coords.derive(function (_a) {
+        var x = _a.x;
+        return x;
+    });
+    y = coords.derive(function (_a) {
+        var y = _a.y;
+        return y;
+    });
+    var top = height.derive(function (h) { return (100 * y.get() / h) + "%"; });
+    var left = width.derive(function (w) { return (100 * x.get() / w) + "%"; });
+    var color = _.lift(rgb)(x, y, width, height, dynamics);
+    var pixelWidth = width.derive(function (w) { return (100 / w) + "%"; });
+    var pixelHeight = height.derive(function (h) { return (100 / h) + "%"; });
+    var style = { top: top, left: left, width: pixelWidth, height: pixelHeight, background: color, position: 'absolute' };
+    return React.createElement("div", {"$style": style});
+}
+var indices = _.derivation(function () {
+    console.log("franny");
+    return imut.Range(0, height.get())
+        .flatMap(function (row) { return imut.Range(0, width.get()).map(function (col) { return ({ x: col, y: row }); }); }).toList();
+});
+window.addEventListener('load', function () {
+    console.log("jimmy");
+    domlock_1.render(React.createElement("div", null, caching_1.cmap(pixel, indices)), document.body);
+});
+window.addEventListener('keydown', function (ev) {
+    if (ev.which === 40) {
+        dynamics.swap(decd);
+    }
+    else if (ev.which === 38) {
+        dynamics.swap(incd);
+    }
+});
+
+},{"../src/caching":4,"../src/domlock":5,"havelock":1,"immutable":2}],4:[function(require,module,exports){
 /// <reference path="../node_modules/havelock/dist/havelock.d.ts"/>
 /// <reference path="../node_modules/immutable/dist/immutable.d.ts"/>
 var _ = require('havelock');
@@ -6067,7 +6118,7 @@ function cmap(f, xs) {
 }
 exports.cmap = cmap;
 
-},{"havelock":1,"immutable":2}],4:[function(require,module,exports){
+},{"havelock":1,"immutable":2}],5:[function(require,module,exports){
 /// <reference path="../node_modules/havelock/dist/havelock.d.ts"/>
 /// <reference path="../node_modules/immutable/dist/immutable.d.ts"/>
 var __extends = (this && this.__extends) || function (d, b) {
@@ -6467,7 +6518,7 @@ function renderDerivable(thing, parent) {
     }
 }
 
-},{"./util":5,"havelock":1,"immutable":2}],5:[function(require,module,exports){
+},{"./util":6,"havelock":1,"immutable":2}],6:[function(require,module,exports){
 var immutable_1 = require('immutable');
 var havelock_1 = require('havelock');
 function populateMatrix(a, b) {
@@ -6551,31 +6602,4 @@ function renderClass(obj) {
 }
 exports.renderClass = renderClass;
 
-},{"havelock":1,"immutable":2}],6:[function(require,module,exports){
-var domlock_1 = require('../src/domlock');
-var caching_1 = require('../src/caching');
-var util_1 = require('../src/util');
-var _ = require('havelock');
-var imut = require('immutable');
-var React = { createElement: domlock_1.dom };
-var time = _.atom(+new Date());
-var timeString = time.derive(function (time) { return new Date(time).toTimeString(); });
-var timeElem = timeString.derive(function (ts) { return React.createElement("span", null, ts); });
-window.setInterval(function () { return time.set(+new Date()); }, 1000);
-var things = _.atom(imut.fromJS([
-    { name: "steve", age: 32 },
-    { name: "wilbur", age: 407 }
-]));
-var alphabet = _.atom(imut.List("abcdefghijklmnopqrstuvwxyz".split('')));
-var wrap = function (xs) { return xs.slice(1).push(xs.first()); };
-var inc = function (x) { return x + 1; };
-function renderThing(thing) {
-    var _a = util_1.destruct(thing, 'name', 'age'), name = _a.name, age = _a.age;
-    return React.createElement("div", {"onclick": function () { return age.swap(inc); }}, "person: ", name, "(", age, ")");
-}
-var klass = _.atom("banana");
-var moarBanana = function (x) { return x + " banana"; };
-var x = React.createElement("div", {"className": klass}, "Bananas on fire: ", timeElem, React.createElement("br", null), React.createElement("button", {"onclick": function () { alphabet.swap(wrap); klass.swap(moarBanana); }}, "more bananas!"), React.createElement("br", null), alphabet, caching_1.cmap(renderThing, things));
-window.addEventListener('load', function () { return domlock_1.render(x, document.body); });
-
-},{"../src/caching":3,"../src/domlock":4,"../src/util":5,"havelock":1,"immutable":2}]},{},[6]);
+},{"havelock":1,"immutable":2}]},{},[3]);

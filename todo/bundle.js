@@ -6166,9 +6166,11 @@ function insertBefore(parent, newChild, referenceChild) {
     parent.insertBefore(newChild, referenceChild);
 }
 exports.insertBefore = insertBefore;
-function remove(child) {
-    child[PARENT] && child[PARENT].set(null);
-    child.remove();
+function remove(parent, child) {
+    if (child.parentNode === parent) {
+        child[PARENT] && child[PARENT].set(null);
+        child.remove();
+    }
 }
 exports.remove = remove;
 function lifecycle(child, onMount, onUnmount) {
@@ -6259,11 +6261,14 @@ function renderVDOM(node, parent) {
         var styles = Object.keys(node.props.$style);
         for (var _d = 0; _d < styles.length; _d++) {
             var style = styles[_d];
-            var val = styles[style];
+            var val = node.props.$style[style];
             if (_.isDerivable(val)) {
                 (function (style, val) {
                     lifecycle(elem, val.reaction(function (v) { return elem.style[style] = v; }));
                 })(style, val);
+            }
+            else {
+                elem.style[style] = val;
             }
         }
     }
@@ -6363,7 +6368,7 @@ var ListHandler = (function () {
                 sharedPreviousOrder.add(n);
             }
             else {
-                remove(n);
+                remove(parent, n);
             }
         });
         var previous = sharedPreviousOrder.toArray();
@@ -6588,7 +6593,7 @@ function newTodo(todos, description) {
     }
 }
 function clearCompleted(todos) {
-    return todos.filter(function (t) { return t.complete; }).toList();
+    return todos.filter(function (t) { return !t.get('completed'); }).toList();
 }
 function toggleComplete(todos, idx) {
     return todos.updateIn([idx, 'completed'], function (x) { return !x; });

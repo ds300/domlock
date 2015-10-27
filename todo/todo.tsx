@@ -51,7 +51,7 @@ function newTodo (todos, description) {
 }
 
 function clearCompleted (todos) {
-  return todos.filter(t => t.complete).toList();
+  return todos.filter(t => !t.get('completed')).toList();
 }
 
 function toggleComplete (todos, idx) {

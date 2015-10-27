@@ -1,8 +1,8 @@
-/// <reference path="../node_modules/havelock/dist/havelock.d.ts"/>
+/// <reference path="../node_modules/derivable/dist/derivable.d.ts"/>
 /// <reference path="../node_modules/immutable/dist/immutable.d.ts"/>
 
-import { Atom, Derivable, Reaction, Lens } from 'havelock'
-import * as _ from 'havelock'
+import { Atom, Derivable, Reaction, Lens } from 'derivable'
+import * as _ from 'derivable'
 import { List, Map } from 'immutable'
 
 // we're gonna use the ids + id2idx pattern a few more times so for brevity...

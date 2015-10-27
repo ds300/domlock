@@ -1,11 +1,9 @@
-/// <reference path="../node_modules/havelock/dist/havelock.d.ts"/>
-/// <reference path="../node_modules/immutable/dist/immutable.d.ts"/>
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var _ = require('havelock');
+var _ = require('derivable');
 var immutable_1 = require('immutable');
 var util_1 = require('./util');
 var VDOM = (function () {
@@ -61,8 +59,8 @@ function toNode(thing) {
     }
 }
 exports.toNode = toNode;
-var IN_DOM = '__havelock__elemInDom';
-var PARENT = '__havelock__elemParent';
+var IN_DOM = '__domlock__elemInDom';
+var PARENT = '__domlock__elemParent';
 function ensureParentState(parent) {
     if (!parent[IN_DOM]) {
         parent[IN_DOM] = _.atom(document.body.contains(parent));
@@ -96,7 +94,7 @@ function insertBefore(parent, newChild, referenceChild) {
     parent.insertBefore(newChild, referenceChild);
 }
 exports.insertBefore = insertBefore;
-function remove(child) {
+function remove(parent, child) {
     child[PARENT] && child[PARENT].set(null);
     child.remove();
 }
@@ -189,11 +187,14 @@ function renderVDOM(node, parent) {
         var styles = Object.keys(node.props.$style);
         for (var _d = 0; _d < styles.length; _d++) {
             var style = styles[_d];
-            var val = styles[style];
+            var val = node.props.$style[style];
             if (_.isDerivable(val)) {
                 (function (style, val) {
                     lifecycle(elem, val.reaction(function (v) { return elem.style[style] = v; }));
                 })(style, val);
+            }
+            else {
+                elem.style[style] = val;
             }
         }
     }
@@ -293,7 +294,7 @@ var ListHandler = (function () {
                 sharedPreviousOrder.add(n);
             }
             else {
-                remove(n);
+                remove(parent, n);
             }
         });
         var previous = sharedPreviousOrder.toArray();

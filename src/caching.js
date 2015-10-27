@@ -1,6 +1,4 @@
-/// <reference path="../node_modules/havelock/dist/havelock.d.ts"/>
-/// <reference path="../node_modules/immutable/dist/immutable.d.ts"/>
-var _ = require('havelock');
+var _ = require('derivable');
 var immutable_1 = require('immutable');
 function deriveIDStuff(uf, xs) {
     var ids = xs.derive(function (xs) { return xs.map(uf).toList(); });
